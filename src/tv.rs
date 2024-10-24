@@ -106,7 +106,7 @@ impl TV {
 
         let topic_name = format!("tv/{}/status", self.id);
         self.client
-            .publish(Message::new(
+            .publish(Message::new_retained(
                 topic_name,
                 serde_json::to_string(&data)?,
                 QOS_1,

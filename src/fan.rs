@@ -103,7 +103,7 @@ impl Fan {
 
         let topic_name = format!("fan/{}/status", self.id);
         self.client
-            .publish(Message::new(
+            .publish(Message::new_retained(
                 topic_name,
                 serde_json::to_string(&status)?,
                 QOS_1,
