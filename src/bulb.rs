@@ -1,4 +1,5 @@
 use crate::{error::Error, DeviceStatus};
+use chrono::{DateTime, Utc};
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
@@ -26,6 +27,7 @@ pub struct Bulb {
     state: Arc<Mutex<BulbState>>,
 }
 
+#[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BulbStatus {
     pub id: String,
@@ -33,6 +35,8 @@ pub struct BulbStatus {
     pub speed: u8,
     pub voltage: f32,
     pub color: (u8, u8, u8),
+    #[serde_as(as = "serde_with::TimestampSeconds<i64, serde_with::formats::Flexible>")]
+    pub timestamp: DateTime<Utc>,
 }
 
 /// Commands that can be recieved by the bulb.
@@ -94,6 +98,7 @@ impl Bulb {
                 speed: lock.speed,
                 voltage: lock.voltage + thread_rng().gen_range(-5.0..5.0),
                 color: lock.color,
+                timestamp: Utc::now(),
             })
         };
 

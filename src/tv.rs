@@ -1,4 +1,5 @@
 use crate::{error::Error, DeviceStatus};
+use chrono::{DateTime, Utc};
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
@@ -25,6 +26,7 @@ pub struct TV {
 }
 
 /// Holds the status report of the tv.
+#[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TVStatus {
     pub id: String,
@@ -32,6 +34,8 @@ pub struct TVStatus {
     pub channel: u16,
     pub volume: u8,
     pub is_muted: bool,
+    #[serde_as(as = "serde_with::TimestampSeconds<i64, serde_with::formats::Flexible>")]
+    pub timestamp: DateTime<Utc>,
 }
 
 /// Commands that can be recieved by the tv.
@@ -101,6 +105,7 @@ impl TV {
                 is_on: lock.is_on,
                 volume: lock.volume,
                 is_muted: lock.volume == 0,
+                timestamp: Utc::now(),
             })
         };
 

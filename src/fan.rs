@@ -1,4 +1,5 @@
 use crate::{error::Error, DeviceStatus};
+use chrono::{DateTime, Utc};
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
@@ -25,12 +26,15 @@ pub struct Fan {
     state: Arc<Mutex<FanState>>,
 }
 
+#[serde_with::serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FanStatus {
     pub id: String,
     pub is_on: bool,
     pub speed: u8,
     pub voltage: f32,
+    #[serde_as(as = "serde_with::TimestampSeconds<i64, serde_with::formats::Flexible>")]
+    pub timestamp: DateTime<Utc>,
 }
 
 /// Commands that can be recieved by the fan.
@@ -98,6 +102,7 @@ impl Fan {
                 is_on: lock.is_on,
                 speed: lock.speed,
                 voltage: lock.voltage + thread_rng().gen_range(1.0..=3.0),
+                timestamp: Utc::now(),
             })
         };
 
