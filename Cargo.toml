@@ -8,7 +8,6 @@ anyhow = { version = "1.0.91", features = ["backtrace"] }
 clap = { version = "4.5.20", features = ["derive"] }
 clap-verbosity-flag = "2.2.2"
 educe = { version = "0.6.0", default-features = false, features = ["Debug"] }
-flume = "0.11.1"
 paho-mqtt = "0.12.5"
 parking_lot = "0.12.3"
 rand = "0.8.5"
