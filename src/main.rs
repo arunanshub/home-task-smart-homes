@@ -13,12 +13,18 @@ async fn watcher(broker_url: impl AsRef<str>) -> Result<(), Error> {
     client.connect(None).await?;
 
     let _ = client
-        .subscribe_many_same_qos(&["fan/+/status", "tv/+/status", "bulb/+/status"], QOS_0)
+        .subscribe_many_same_qos(
+            &[
+                "fan/home/+/status",
+                "tv/home/+/status",
+                "bulb/home/+/status",
+            ],
+            QOS_0,
+        )
         .await?;
 
     let stream = client.get_stream(16);
     while let Ok(Some(msg)) = stream.recv().await {
-        info!(msg = &*msg.payload_str());
         let Ok(status) = serde_json::from_slice(msg.payload()) else {
             warn!("Failed to parse message: {:?}", msg);
             continue;
@@ -75,9 +81,10 @@ async fn main() -> anyhow::Result<()> {
         select! {
             res = &mut watcher_handle => {
                 let res = res?;
-                if let Err(err) = res {
+                if let Err(ref err) = res {
                     error!(?err, "watcher failed");
                 }
+                res?
             },
             results = &mut join_fut => {
                 for res in results {
