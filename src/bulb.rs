@@ -2,14 +2,14 @@ use crate::error::Error;
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
-use rand::Rng;
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{sync::Arc, time::Duration};
 use tokio::{select, task::JoinHandle, time::sleep};
 use tracing::{info, warn};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct BulbState {
     pub is_on: bool,
     pub speed: u8,
@@ -24,6 +24,15 @@ pub struct Bulb {
     client: AsyncClient,
     pub id: String,
     state: Arc<Mutex<BulbState>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulbStatus {
+    pub id: String,
+    pub is_on: bool,
+    pub speed: u8,
+    pub voltage: f32,
+    pub color: (u8, u8, u8),
 }
 
 /// Commands that can be recieved by the bulb.
@@ -77,24 +86,22 @@ impl Bulb {
 
     /// Publish the status of the device.
     pub async fn publish_status(&self) -> Result<(), Error> {
-        let (is_on, voltage, color) = {
+        let status = {
             let lock = self.state.lock();
-            (
-                lock.is_on,
-                lock.voltage + rand::thread_rng().gen_range(1.0..=3.0),
-                lock.color,
-            )
+            BulbStatus {
+                id: self.id.clone(),
+                is_on: lock.is_on,
+                speed: lock.speed,
+                voltage: lock.voltage + thread_rng().gen_range(-5.0..5.0),
+                color: lock.color,
+            }
         };
+
         let topic_name = format!("bulb/{}/status", self.id);
         self.client
             .publish(Message::new(
                 topic_name,
-                json!({
-                    "is_on": is_on,
-                    "voltage": voltage,
-                    "color": color,
-                })
-                .to_string(),
+                serde_json::to_string(&status)?,
                 QOS_1,
             ))
             .await?;

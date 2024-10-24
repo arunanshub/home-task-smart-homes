@@ -24,6 +24,16 @@ pub struct TV {
     state: Arc<Mutex<TVState>>,
 }
 
+/// Holds the status report of the tv.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TVStatus {
+    pub id: String,
+    pub is_on: bool,
+    pub channel: u16,
+    pub volume: u8,
+    pub is_muted: bool,
+}
+
 /// Commands that can be recieved by the tv.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(tag = "cmd", content = "args", rename_all = "snake_case")]
@@ -83,21 +93,22 @@ impl TV {
 
     /// Publish the status of the device.
     pub async fn publish_status(&self) -> Result<(), Error> {
-        let (is_on, channel, volume) = {
+        let data = {
             let lock = self.state.lock();
-            (lock.is_on, lock.channel, lock.volume)
+            TVStatus {
+                channel: lock.channel,
+                id: self.id.clone(),
+                is_on: lock.is_on,
+                volume: lock.volume,
+                is_muted: lock.volume == 0,
+            }
         };
+
         let topic_name = format!("tv/{}/status", self.id);
         self.client
             .publish(Message::new(
                 topic_name,
-                json!({
-                    "is_on": is_on,
-                    "channel": channel,
-                    "volume": volume,
-                    "is_muted": volume == 0,
-                })
-                .to_string(),
+                serde_json::to_string(&data)?,
                 QOS_1,
             ))
             .await?;

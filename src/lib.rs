@@ -6,8 +6,7 @@ pub mod tv;
 use bulb::Bulb;
 use error::Error;
 use fan::Fan;
-use tokio::select;
-use tracing::error;
+use tokio::{select, spawn};
 use tv::TV;
 
 #[derive(Debug)]
@@ -35,15 +34,18 @@ impl House {
 
     pub async fn handle_incoming(self) -> Result<(), Error> {
         let mut bulb = self.bulb;
+        let mut fan = self.fan;
+        let mut tv = self.tv;
+
         let mut bulb_handle = tokio::spawn(async move { bulb.handle_incoming().await });
+        let mut fan_handle = spawn(async move { fan.handle_incoming().await });
+        let mut tv_handle = spawn(async move { tv.handle_incoming().await });
 
         loop {
             select! {
-                res = &mut bulb_handle => {
-                    if let Err(err) = res {
-                        error!(?err);
-                    }
-                }
+                res = &mut fan_handle => { res?? }
+                res = &mut bulb_handle => { res?? }
+                res = &mut tv_handle => {res??}
             }
         }
     }

@@ -2,15 +2,15 @@ use crate::error::Error;
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
-use rand::Rng;
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{sync::Arc, time::Duration};
 use tokio::{select, task::JoinHandle, time::sleep};
 use tracing::{info, warn};
 
-#[derive(Debug, Clone)]
-pub struct FanData {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct FanState {
     pub is_on: bool,
     pub speed: u8,
     pub voltage: f32,
@@ -22,10 +22,18 @@ pub struct Fan {
     #[educe(Debug(ignore))]
     client: AsyncClient,
     pub id: String,
-    state: Arc<Mutex<FanData>>,
+    state: Arc<Mutex<FanState>>,
 }
 
-/// Commands that can be recieved by the bulb.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FanStatus {
+    pub id: String,
+    pub is_on: bool,
+    pub speed: u8,
+    pub voltage: f32,
+}
+
+/// Commands that can be recieved by the fan.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(tag = "cmd", content = "args", rename_all = "snake_case")]
 pub enum FanCommand {
@@ -47,10 +55,10 @@ impl Fan {
         Ok(Fan {
             id: id.as_ref().into(),
             client: AsyncClient::new(create_opts)?,
-            state: Arc::new(Mutex::new(FanData {
+            state: Arc::new(Mutex::new(FanState {
                 is_on: false,
                 // TODO: for now we are putting the client here. Maybe to make it
-                // more "modular" we can build the client alongside the bulb and
+                // more "modular" we can build the client alongside the device and
                 // pass it in as a parameter.
                 voltage: 240.0,
                 speed: 1,
@@ -83,22 +91,21 @@ impl Fan {
     pub async fn publish_status(&self) -> Result<(), Error> {
         // TODO: each device publishes to a hardcoded topic. See if we can
         // "standardize" it
-        let (is_on, voltage) = {
+        let status = {
             let lock = self.state.lock();
-            (
-                lock.is_on,
-                lock.voltage + rand::thread_rng().gen_range(1.0..=3.0),
-            )
+            FanStatus {
+                id: self.id.clone(),
+                is_on: lock.is_on,
+                speed: lock.speed,
+                voltage: lock.voltage + thread_rng().gen_range(1.0..=3.0),
+            }
         };
+
         let topic_name = format!("fan/{}/status", self.id);
         self.client
             .publish(Message::new(
                 topic_name,
-                json!({
-                    "is_on": is_on,
-                    "voltage": voltage,
-                })
-                .to_string(),
+                serde_json::to_string(&status)?,
                 QOS_1,
             ))
             .await?;
