@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::{error::Error, DeviceStatus};
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
@@ -95,13 +95,13 @@ impl TV {
     pub async fn publish_status(&self) -> Result<(), Error> {
         let data = {
             let lock = self.state.lock();
-            TVStatus {
+            DeviceStatus::TV(TVStatus {
                 channel: lock.channel,
                 id: self.id.clone(),
                 is_on: lock.is_on,
                 volume: lock.volume,
                 is_muted: lock.volume == 0,
-            }
+            })
         };
 
         let topic_name = format!("tv/{}/status", self.id);

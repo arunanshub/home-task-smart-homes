@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::{error::Error, DeviceStatus};
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
@@ -88,13 +88,13 @@ impl Bulb {
     pub async fn publish_status(&self) -> Result<(), Error> {
         let status = {
             let lock = self.state.lock();
-            BulbStatus {
+            DeviceStatus::Bulb(BulbStatus {
                 id: self.id.clone(),
                 is_on: lock.is_on,
                 speed: lock.speed,
                 voltage: lock.voltage + thread_rng().gen_range(-5.0..5.0),
                 color: lock.color,
-            }
+            })
         };
 
         let topic_name = format!("bulb/{}/status", self.id);

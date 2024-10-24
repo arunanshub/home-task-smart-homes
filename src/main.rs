@@ -18,6 +18,7 @@ async fn watcher(broker_url: impl AsRef<str>) -> Result<(), Error> {
 
     let stream = client.get_stream(16);
     while let Ok(Some(msg)) = stream.recv().await {
+        info!(msg = &*msg.payload_str());
         let Ok(status) = serde_json::from_slice(msg.payload()) else {
             warn!("Failed to parse message: {:?}", msg);
             continue;
@@ -56,9 +57,9 @@ async fn main() -> anyhow::Result<()> {
         join_set.spawn(async move {
             Home::new(
                 format!("home-{i}"),
-                Bulb::try_new(i.to_string(), &broker_url).unwrap(),
-                Fan::try_new(i.to_string(), &broker_url).unwrap(),
-                TV::try_new(i.to_string(), &broker_url).unwrap(),
+                Bulb::try_new(format!("home/{}", i), &broker_url).unwrap(),
+                Fan::try_new(format!("home/{}", i), &broker_url).unwrap(),
+                TV::try_new(format!("home/{}", i), &broker_url).unwrap(),
             )
             .handle_incoming()
             .await

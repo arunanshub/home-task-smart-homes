@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::{error::Error, DeviceStatus};
 use educe::Educe;
 use paho_mqtt::{AsyncClient, ConnectOptionsBuilder, CreateOptionsBuilder, Message, QOS_1};
 use parking_lot::Mutex;
@@ -93,12 +93,12 @@ impl Fan {
         // "standardize" it
         let status = {
             let lock = self.state.lock();
-            FanStatus {
+            DeviceStatus::Fan(FanStatus {
                 id: self.id.clone(),
                 is_on: lock.is_on,
                 speed: lock.speed,
                 voltage: lock.voltage + thread_rng().gen_range(1.0..=3.0),
-            }
+            })
         };
 
         let topic_name = format!("fan/{}/status", self.id);
