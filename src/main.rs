@@ -1,9 +1,42 @@
 use clap::Parser;
-use home_task_smart_homes::{bulb::Bulb, cli::Cli, fan::Fan, home::Home, tv::TV, DeviceStatus};
+use home_task_smart_homes::{
+    bulb::Bulb, cli::Cli, error::Error, fan::Fan, home::Home, tv::TV, DeviceStatus,
+};
 use paho_mqtt::{AsyncClient, QOS_0};
 use tokio::{pin, select, task::JoinSet};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use tracing_log::AsTrace;
+
+async fn watcher(broker_url: impl AsRef<str>) -> Result<(), Error> {
+    info!("Starting watcher");
+    let mut client = AsyncClient::new(broker_url.as_ref()).unwrap();
+    client.connect(None).await?;
+
+    let _ = client
+        .subscribe_many_same_qos(&["fan/+/status", "tv/+/status", "bulb/+/status"], QOS_0)
+        .await?;
+
+    let stream = client.get_stream(16);
+    while let Ok(Some(msg)) = stream.recv().await {
+        let Ok(status) = serde_json::from_slice(msg.payload()) else {
+            warn!("Failed to parse message: {:?}", msg);
+            continue;
+        };
+
+        match status {
+            DeviceStatus::Bulb(status) => {
+                info!(?status, "bulb status");
+            }
+            DeviceStatus::Fan(status) => {
+                info!(?status, "fan status");
+            }
+            DeviceStatus::TV(status) => {
+                info!(?status, "TV status");
+            }
+        }
+    }
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -29,48 +62,29 @@ async fn main() -> anyhow::Result<()> {
             )
             .handle_incoming()
             .await
-            .unwrap();
         });
     }
     pin!(
         let join_fut = join_set.join_all();
     );
 
-    let mut watcher = tokio::spawn(async move {
-        info!("Starting watcher");
-        let mut client = AsyncClient::new(broker_url).unwrap();
-        client.connect(None).await.unwrap();
-
-        let _ = client
-            .subscribe_many_same_qos(&["fan/+/status", "tv/+/status", "bulb/+/status"], QOS_0)
-            .await
-            .unwrap();
-
-        let stream = client.get_stream(16);
-        while let Ok(Some(msg)) = stream.recv().await {
-            let Ok(status) = serde_json::from_slice(msg.payload()) else {
-                warn!("Failed to parse message: {:?}", msg);
-                continue;
-            };
-
-            match status {
-                DeviceStatus::Bulb(status) => {
-                    info!(?status, "bulb status");
-                }
-                DeviceStatus::Fan(status) => {
-                    info!(?status, "fan status");
-                }
-                DeviceStatus::TV(status) => {
-                    info!(?status, "TV status");
-                }
-            }
-        }
-    });
+    let mut watcher_handle = tokio::spawn(watcher(broker_url));
 
     loop {
         select! {
-            res = &mut watcher => {res?},
-            _ = &mut join_fut => {}
+            res = &mut watcher_handle => {
+                let res = res?;
+                if let Err(err) = res {
+                    error!(?err, "watcher failed");
+                }
+            },
+            results = &mut join_fut => {
+                for res in results {
+                    if let Err(err) = res {
+                        error!(?err, "device failed");
+                    }
+                }
+            }
         }
     }
 }
