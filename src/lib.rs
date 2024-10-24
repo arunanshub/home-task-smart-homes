@@ -1,4 +1,5 @@
 pub mod bulb;
+pub mod cli;
 pub mod error;
 pub mod fan;
 pub mod home;

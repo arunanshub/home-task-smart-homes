@@ -1,27 +1,31 @@
-use home_task_smart_homes::{bulb::Bulb, fan::Fan, home::Home, tv::TV, DeviceStatus};
+use clap::Parser;
+use home_task_smart_homes::{bulb::Bulb, cli::Cli, fan::Fan, home::Home, tv::TV, DeviceStatus};
 use paho_mqtt::{AsyncClient, QOS_0};
 use tokio::{pin, select, task::JoinSet};
-use tracing::{info, level_filters::LevelFilter, warn};
+use tracing::{info, warn};
+use tracing_log::AsTrace;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
     tracing_subscriber::fmt()
         .with_level(true)
-        .with_max_level(LevelFilter::INFO)
+        .with_max_level(cli.verbosity.log_level_filter().as_trace())
         .pretty()
         .init();
 
-    let broker_url = "tcp://localhost:1883";
+    let broker_url = cli.broker_url;
 
     // simulate 10 houses
     let mut join_set = JoinSet::new();
     for i in 0..10 {
+        let broker_url = broker_url.clone();
         join_set.spawn(async move {
             Home::new(
                 format!("home-{i}"),
-                Bulb::try_new(i.to_string(), broker_url).unwrap(),
-                Fan::try_new(i.to_string(), broker_url).unwrap(),
-                TV::try_new(i.to_string(), broker_url).unwrap(),
+                Bulb::try_new(i.to_string(), &broker_url).unwrap(),
+                Fan::try_new(i.to_string(), &broker_url).unwrap(),
+                TV::try_new(i.to_string(), &broker_url).unwrap(),
             )
             .handle_incoming()
             .await
