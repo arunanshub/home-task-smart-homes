@@ -87,7 +87,7 @@ impl TV {
             let lock = self.state.lock();
             (lock.is_on, lock.channel, lock.volume)
         };
-        let topic_name = format!("bulb/{}/status", self.id);
+        let topic_name = format!("tv/{}/status", self.id);
         self.client
             .publish(Message::new(
                 topic_name,
@@ -123,14 +123,14 @@ impl TV {
     }
 
     pub async fn handle_incoming(&mut self) -> Result<(), Error> {
-        info!(?self.id, "Starting bulb");
+        info!(?self.id, "Starting tv");
 
         // connect the client to the broker
         let connect_opts = ConnectOptionsBuilder::new_v5()
             .keep_alive_interval(Duration::from_secs(5))
             // if I am turned off, let others know that I am not available
             .will_message(Message::new_retained(
-                format!("bulb/{}/available", self.id),
+                format!("tv/{}/available", self.id),
                 json!({
                     "is_available": false,
                 })
@@ -145,7 +145,7 @@ impl TV {
         // let others know that I am available now
         self.client
             .publish(Message::new_retained(
-                format!("bulb/{}/available", self.id),
+                format!("tv/{}/available", self.id),
                 json!({
                     "is_available": true
                 })
@@ -166,10 +166,10 @@ impl TV {
         // build a buffered stream to recieve messages but not overload the
         // memory
         let stream = self.client.get_stream(16);
-        // listen for bulb state
+        // listen for tv state
         let _ = self
             .client
-            .subscribe(format!("bulb/{}/state", self.id), QOS_1)
+            .subscribe(format!("tv/{}/command", self.id), QOS_1)
             .await?;
 
         loop {

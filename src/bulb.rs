@@ -62,17 +62,17 @@ impl Bulb {
 
     pub fn turn_on(&mut self) {
         self.state.lock().is_on = true;
-        info!("Turning on bulb");
+        info!(self.id, "Turning on bulb");
     }
 
     pub fn turn_off(&mut self) {
         self.state.lock().is_on = false;
-        info!("Turning off bulb");
+        info!(self.id, "Turning off bulb");
     }
 
     pub fn set_color(&mut self, color: (u8, u8, u8)) {
         self.state.lock().color = color;
-        info!(?color, "Changing color");
+        info!(self.id, ?color, "Changing color");
     }
 
     /// Publish the status of the device.
@@ -164,7 +164,7 @@ impl Bulb {
         // listen for bulb state
         let _ = self
             .client
-            .subscribe(format!("bulb/{}/state", self.id), QOS_1)
+            .subscribe(format!("bulb/{}/command", self.id), QOS_1)
             .await?;
 
         loop {

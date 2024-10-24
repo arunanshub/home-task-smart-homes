@@ -165,11 +165,7 @@ impl Fan {
         // listen for fan state and fan speed commands
         let _ = self
             .client
-            .subscribe(format!("fan/{}/state", self.id), QOS_1)
-            .await?;
-        let _ = self
-            .client
-            .subscribe(format!("fan/{}/speed", self.id), QOS_1)
+            .subscribe(format!("fan/{}/command", self.id), QOS_1)
             .await?;
 
         loop {
