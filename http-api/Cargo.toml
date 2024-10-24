@@ -1,0 +1,11 @@
+[package]
+name = "http-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7.7"
+smart-homes = { version = "0.1.0", path = "../smart-homes" }
+tokio = { workspace = true, features = ["net"] }
+paho-mqtt.workspace = true
+serde_json.workspace = true
