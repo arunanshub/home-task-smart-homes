@@ -1,8 +1,6 @@
 use clap::Parser;
-use home_task_smart_homes::{
-    bulb::Bulb, cli::Cli, error::Error, fan::Fan, home::Home, tv::TV, DeviceStatus,
-};
 use paho_mqtt::{AsyncClient, QOS_0};
+use smart_homes::{bulb::Bulb, cli::Cli, error::Error, fan::Fan, home::Home, tv::TV, DeviceStatus};
 use tokio::{pin, select, task::JoinSet};
 use tracing::{error, info, warn};
 use tracing_log::AsTrace;
