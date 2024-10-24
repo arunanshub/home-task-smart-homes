@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
 
     // simulate 10 houses
     let mut join_set = JoinSet::new();
-    for i in 0..10 {
+    for i in 0..cli.num_houses {
         let broker_url = broker_url.clone();
         join_set.spawn(async move {
             Home::new(
