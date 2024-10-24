@@ -24,13 +24,13 @@ pub struct TV {
     state: Arc<Mutex<TVState>>,
 }
 
-/// Commands that can be recieved by the bulb.
+/// Commands that can be recieved by the tv.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(tag = "cmd", content = "args", rename_all = "snake_case")]
 pub enum TVCommand {
-    /// Turn on the bulb.
+    /// Turn on the tv.
     On,
-    /// Turn off the bulb.
+    /// Turn off the tv.
     Off,
     /// Set volume
     Volume(u8),
@@ -43,18 +43,18 @@ pub enum TVCommand {
 impl TV {
     pub fn try_new(id: impl AsRef<str>, broker_url: impl Into<String>) -> Result<Self, Error> {
         let create_opts = CreateOptionsBuilder::new()
-            .client_id(format!("bulb/{}", id.as_ref()))
+            .client_id(format!("tv/{}", id.as_ref()))
             .server_uri(broker_url)
             .finalize();
 
         Ok(TV {
             id: id.as_ref().into(),
+            // TODO: for now we are putting the client here. Maybe to make it
+            // more "modular" we can build the client alongside the tv and
+            // pass it in as a parameter.
             client: AsyncClient::new(create_opts)?,
             state: Arc::new(Mutex::new(TVState {
                 is_on: false,
-                // TODO: for now we are putting the client here. Maybe to make it
-                // more "modular" we can build the client alongside the bulb and
-                // pass it in as a parameter.
                 channel: 1,
                 volume: 10,
             })),

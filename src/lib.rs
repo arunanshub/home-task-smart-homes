@@ -5,13 +5,17 @@ pub mod tv;
 
 use bulb::Bulb;
 use error::Error;
+use fan::Fan;
 use tokio::select;
 use tracing::error;
+use tv::TV;
 
 #[derive(Debug)]
 pub struct House {
     pub name: String,
-    pub bulb: bulb::Bulb,
+    pub bulb: Bulb,
+    pub fan: Fan,
+    pub tv: TV,
 }
 
 pub enum HouseCommand {
@@ -20,10 +24,12 @@ pub enum HouseCommand {
 }
 
 impl House {
-    pub fn new(id: impl Into<String>, bulb: Bulb) -> Self {
+    pub fn new(id: impl Into<String>, bulb: Bulb, fan: Fan, tv: TV) -> Self {
         House {
             name: id.into(),
             bulb,
+            fan,
+            tv,
         }
     }
 

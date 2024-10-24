@@ -1,4 +1,4 @@
-use home_task_smart_homes::{bulb, fan::Fan};
+use home_task_smart_homes::{bulb::Bulb, fan::Fan};
 use tokio::select;
 use tracing::level_filters::LevelFilter;
 
@@ -12,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
 
     // let client_opts = CreateOptions::new();
     // dbg!(client_opts);
-    let mut bulb = bulb::Bulb::try_new("1", "tcp://localhost:1883").unwrap();
+    let mut bulb = Bulb::try_new("1", "tcp://localhost:1883").unwrap();
     let mut fan = Fan::try_new("1", "tcp://localhost:1883").unwrap();
     let mut fan2 = Fan::try_new("2", "tcp://localhost:1883").unwrap();
 
