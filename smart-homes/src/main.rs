@@ -81,8 +81,8 @@ async fn main() -> anyhow::Result<()> {
                 let res = res?;
                 if let Err(ref err) = res {
                     error!(?err, "watcher failed");
+                    res?
                 }
-                res?
             },
             results = &mut join_fut => {
                 for res in results {
