@@ -1,6 +1,7 @@
 pub mod bulb;
 pub mod error;
 pub mod fan;
+pub mod tv;
 
 use bulb::Bulb;
 use error::Error;
