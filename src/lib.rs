@@ -3,7 +3,6 @@ pub mod cli;
 pub mod error;
 pub mod fan;
 pub mod home;
-pub mod http_api;
 pub mod tv;
 
 use bulb::{Bulb, BulbStatus};
