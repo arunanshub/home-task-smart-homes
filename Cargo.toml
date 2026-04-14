@@ -3,7 +3,7 @@ members = ["http-api", "smart-homes"]
 resolver = "2"
 
 [workspace.dependencies]
-tokio = { version = "1.41.0", features = ["macros", "parking_lot", "rt-multi-thread", "time"] }
+tokio = { version = "1.43.1", features = ["macros", "parking_lot", "rt-multi-thread", "time"] }
 paho-mqtt = "0.12.5"
 clap = { version = "4.5.20", features = ["derive"] }
 clap-verbosity-flag = "2.2.2"
